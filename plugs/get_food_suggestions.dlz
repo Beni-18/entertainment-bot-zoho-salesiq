@@ -1,0 +1,95 @@
+// Plug: Get Food Suggestions from Zomato API
+// Description: Recommends restaurants and cuisines based on location/cuisine
+// Input: latitude, longitude, cuisine, rating, delivery
+// Output: List of restaurants with ratings, cuisines, delivery time
+
+map get_food_suggestions(map p_auth_map, double p_latitude, double p_longitude, text p_cuisine, double p_min_rating, boolean p_delivery)
+{
+  try
+  {
+    // Validate inputs
+    if (p_auth_map.isEmpty() || p_latitude == 0 || p_longitude == 0) {
+      return map("error", "Invalid location parameters");
+    }
+    
+    // Build Zomato API URL
+    text l_api_url = "https://api.zomato.com/api/v2.1/search";
+    
+    map l_query_params = map(
+      "lat", p_latitude,
+      "lon", p_longitude,
+      "radius", 5000,
+      "sort", "rating",
+      "order", "desc",
+      "count", 20
+    );
+    
+    // Add optional filters
+    if (!p_cuisine.isEmpty()) {
+      l_query_params.put("cuisines", p_cuisine);
+    }
+    
+    // Call Zomato API with OAuth
+    map l_headers = map("user-key", p_auth_map.get("zomato_api_key"));
+    
+    map l_response = invokeurl
+    [
+      url: l_api_url
+      type: GET
+      parameters: l_query_params
+      headers: l_headers
+      connection: "zomato_oauth"
+      timeout: 30
+    ];
+    
+    // Check for API errors
+    if (l_response.containKey("error") || !l_response.containKey("restaurants")) {
+      return map("error", "Failed to fetch restaurants");
+    }
+    
+    // Parse restaurants from response
+    list l_restaurants = list();
+    list l_restaurant_list = l_response.get("restaurants");
+    
+    for each l_restaurant in l_restaurant_list {
+      map l_restaurant_info = l_restaurant.get("restaurant");
+      double l_rating = l_restaurant_info.get("user_rating").get("aggregate_rating").toNumber();
+      
+      // Filter by minimum rating if specified
+      if (l_rating >= p_min_rating) {
+        map l_rest_details = map(
+          "name", l_restaurant_info.get("name"),
+          "cuisines", l_restaurant_info.get("cuisines"),
+          "rating", l_rating,
+          "votes", l_restaurant_info.get("user_rating").get("votes"),
+          "average_cost", l_restaurant_info.get("average_cost_for_two"),
+          "currency", l_restaurant_info.get("currency"),
+          "location", l_restaurant_info.get("location").get("address"),
+          "phone", l_restaurant_info.get("phone_numbers"),
+          "url", l_restaurant_info.get("url"),
+          "delivery", l_restaurant_info.get("is_delivering_now")
+        );
+        
+        // Only include if delivery is available (if requested)
+        if (!p_delivery || l_restaurant_info.get("is_delivering_now")) {
+          l_restaurants.add(l_rest_details);
+        }
+      }
+    }
+    
+    // Return formatted response
+    return map(
+      "success", true,
+      "restaurants", l_restaurants,
+      "location", map("latitude", p_latitude, "longitude", p_longitude),
+      "cuisine_filter", p_cuisine,
+      "minimum_rating", p_min_rating,
+      "total_results", l_restaurants.size()
+    );
+  }
+  catch (exception l_error) {
+    // Handle exceptions
+    info "Food suggestions error: " + l_error.getMessage();
+    return map("error", "Failed to fetch restaurants: " + l_error.getMessage());
+  }
+}
