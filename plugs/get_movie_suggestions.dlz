@@ -1,0 +1,112 @@
+// Plug: Get Movie Suggestions from TMDB API
+// Description: Fetches popular or search-based movie recommendations
+// Input: category (popular/now_playing/top_rated), page, language
+// Output: List of movies with titles, ratings, release dates
+
+map get_movie_suggestions(map p_auth_map, text p_category, int p_page, text p_language)
+{
+  try
+  {
+    // Validate inputs
+    if (p_auth_map.isEmpty() || p_category.isEmpty()) {
+      return map("error", "Invalid parameters provided");
+    }
+    
+    // Build API URL based on category
+    text l_api_url = "https://api.themoviedb.org/3/movie/" + p_category;
+    
+    // Build query parameters
+    map l_query_params = map(
+      "api_key", p_auth_map.get("tmdb_api_key"),
+      "page", p_page,
+      "language", p_language
+    );
+    
+    // Call TMDB API with OAuth
+    map l_response = invokeurl
+    [
+      url: l_api_url
+      type: GET
+      parameters: l_query_params
+      connection: "tmdb_oauth"
+      timeout: 30
+    ];
+    
+    // Check for API errors
+    if (l_response.containKey("error")) {
+      return map("error", "TMDB API Error: " + l_response.get("error"));
+    }
+    
+    // Parse response
+    list l_results = l_response.get("results");
+    list l_movies = list();
+    
+    for each l_movie in l_results {
+      map l_movie_details = map(
+        "title", l_movie.get("title"),
+        "rating", l_movie.get("vote_average"),
+        "release_date", l_movie.get("release_date"),
+        "overview", l_movie.get("overview"),
+        "poster_path", "https://image.tmdb.org/t/p/w500" + l_movie.get("poster_path"),
+        "movie_id", l_movie.get("id")
+      );
+      l_movies.add(l_movie_details);
+    }
+    
+    // Return formatted response
+    return map(
+      "success", true,
+      "movies", l_movies,
+      "total_results", l_response.get("total_results"),
+      "total_pages", l_response.get("total_pages"),
+      "current_page", p_page
+    );
+  }
+  catch (exception l_error) {
+    // Handle exceptions
+    info "Movie suggestions error: " + l_error.getMessage();
+    return map("error", "Failed to fetch movies: " + l_error.getMessage());
+  }
+}
+
+// Function to search movies by query
+map search_movies(map p_auth_map, text p_query, int p_page, text p_language)
+{
+  try
+  {
+    if (p_auth_map.isEmpty() || p_query.isEmpty()) {
+      return map("error", "Invalid search parameters");
+    }
+    
+    text l_api_url = "https://api.themoviedb.org/3/search/movie";
+    
+    map l_query_params = map(
+      "api_key", p_auth_map.get("tmdb_api_key"),
+      "query", p_query,
+      "page", p_page,
+      "language", p_language
+    );
+    
+    map l_response = invokeurl
+    [
+      url: l_api_url
+      type: GET
+      parameters: l_query_params
+      connection: "tmdb_oauth"
+      timeout: 30
+    ];
+    
+    if (l_response.containKey("error")) {
+      return map("error", "Search failed: " + l_response.get("error"));
+    }
+    
+    return map(
+      "success", true,
+      "results", l_response.get("results"),
+      "total_results", l_response.get("total_results")
+    );
+  }
+  catch (exception l_error) {
+    return map("error", "Search error: " + l_error.getMessage());
+  }
+}
