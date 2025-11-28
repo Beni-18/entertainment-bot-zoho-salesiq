@@ -1,0 +1,112 @@
+// ============================================
+// EntertainmentBuddy - Main Bot Script
+// Deluge for Zoho SalesIQ
+// ============================================
+
+on_chat_open()
+{
+    msg = map();
+    msg.put("type", "text");
+    msg.put("content", "Welcome to EntertainmentBuddy! 🎬\nYour AI-powered entertainment companion");
+    
+    sendResponse(msg);
+    showMainMenu();
+}
+
+on_user_message()
+{
+    user_input = message.get("text").toLowerCase();
+    
+    if(user_input.contains("suggest") || user_input.contains("recommendation"))
+    {
+        handleSuggestSomething();
+    }
+    else if(user_input.contains("book") || user_input.contains("event") || user_input.contains("ticket"))
+    {
+        handleBookEvent();
+    }
+    else if(user_input.contains("surprise") || user_input.contains("mood") || user_input.contains("plan"))
+    {
+        handleSurpriseMe();
+    }
+    else
+    {
+        showMainMenu();
+    }
+}
+
+showMainMenu()
+{
+    options = list(
+        map("text", "📽️ Suggest something", "value", "suggest"),
+        map("text", "🎫 Book an event", "value", "book"),
+        map("text", "🎲 Surprise me", "value", "surprise")
+    );
+    
+    card = map();
+    card.put("type", "suggestion");
+    card.put("title", "What would you like to do?");
+    card.put("options", options);
+    
+    sendResponse(card);
+}
+
+handleSuggestSomething()
+{
+    categories = list(
+        map("text", "🎬 Movies", "value", "movies"),
+        map("text", "📚 Books", "value", "books"),
+        map("text", "🎮 Games", "value", "games"),
+        map("text", "🍔 Food", "value", "food"),
+        map("text", "🎵 Music", "value", "music")
+    );
+    
+    card = map();
+    card.put("type", "suggestion");
+    card.put("title", "Choose a category:");
+    card.put("options", categories);
+    
+    sendResponse(card);
+}
+
+handleBookEvent()
+{
+    event_types = list(
+        map("text", "🎬 Movies", "value", "movies"),
+        map("text", "🎤 Talkshows", "value", "talkshows"),
+        map("text", "🎵 Concerts", "value", "concerts"),
+        map("text", "📍 Find nearby", "value", "nearby")
+    );
+    
+    card = map();
+    card.put("type", "suggestion");
+    card.put("title", "What would you like to book?");
+    card.put("options", event_types);
+    
+    sendResponse(card);
+}
+
+handleSurpriseMe()
+{
+    moods = list(
+        map("text", "😌 Chill", "value", "chill"),
+        map("text", "🤩 Excited", "value", "excited"),
+        map("text", "💕 Romantic", "value", "romantic"),
+        map("text", "⚡ Energetic", "value", "energetic"),
+        map("text", "😴 Bored", "value", "bored")
+    );
+    
+    card = map();
+    card.put("type", "suggestion");
+    card.put("title", "What's your mood right now?");
+    card.put("options", moods);
+    
+    sendResponse(card);
+}
+
+sendResponse(content)
+{
+    response = map();
+    response.put("message", content);
+    return response;
+}
