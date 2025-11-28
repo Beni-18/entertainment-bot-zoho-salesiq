@@ -1,0 +1,82 @@
+// Plug: Get Events Near Me from Ticketmaster API
+// Description: Finds concerts, shows, and entertainment events by location
+// Input: latitude, longitude, event_type, distance, unit
+// Output: List of events with dates, venues, prices
+
+map get_events_near_me(map p_auth_map, double p_latitude, double p_longitude, text p_event_type, int p_distance, text p_unit)
+{
+  try
+  {
+    // Validate inputs
+    if (p_auth_map.isEmpty() || p_latitude == 0 || p_longitude == 0) {
+      return map("error", "Invalid location parameters");
+    }
+    
+    // Build Ticketmaster API URL
+    text l_api_url = "https://app.ticketmaster.com/discovery/v2/events";
+    
+    // Prepare classification parameter based on event type
+    text l_classification = p_event_type.isEmpty() ? "*" : p_event_type;
+    
+    map l_query_params = map(
+      "apikey", p_auth_map.get("ticketmaster_api_key"),
+      "latlong", p_latitude + "," + p_longitude,
+      "radius", p_distance,
+      "unit", p_unit,
+      "classification", l_classification,
+      "size", 20,
+      "sort", "date,asc"
+    );
+    
+    // Call Ticketmaster API with OAuth
+    map l_response = invokeurl
+    [
+      url: l_api_url
+      type: GET
+      parameters: l_query_params
+      connection: "ticketmaster_oauth"
+      timeout: 30
+    ];
+    
+    // Check for API errors
+    if (l_response.containKey("error") || !l_response.containKey("_embedded")) {
+      return map("error", "Failed to fetch events");
+    }
+    
+    // Parse events from response
+    list l_events = list();
+    
+    if (l_response.get("_embedded").containKey("events")) {
+      list l_event_list = l_response.get("_embedded").get("events");
+      
+      for each l_event in l_event_list {
+        map l_venues = l_event.get("_embedded").get("venues").get(0);
+        map l_event_details = map(
+          "name", l_event.get("name"),
+          "type", l_event.get("type"),
+          "date", l_event.get("dates").get("start").get("localDate"),
+          "time", l_event.get("dates").get("start").get("localTime"),
+          "venue_name", l_venues.get("name"),
+          "venue_city", l_venues.get("city").get("name"),
+          "venue_state", l_venues.get("state").get("stateCode"),
+          "url", l_event.get("url"),
+          "ticket_status", l_event.get("dates").get("status").get("code")
+        );
+        l_events.add(l_event_details);
+      }
+    }
+    
+    // Return formatted response
+    return map(
+      "success", true,
+      "events", l_events,
+      "total_results", l_response.get("page").get("totalElements"),
+      "location", map("latitude", p_latitude, "longitude", p_longitude)
+    );
+  }
+  catch (exception l_error) {
+    // Handle exceptions
+    info "Events search error: " + l_error.getMessage();
+    return map("error", "Failed to fetch events: " + l_error.getMessage());
+  }
+}
