@@ -1,0 +1,12 @@
+{
+  "org_id": "YOUR_ORG_ID",
+  "client_id": "YOUR_CLIENT_ID",
+  "client_secret": "YOUR_CLIENT_SECRET",
+  "refresh_token": "YOUR_REFRESH_TOKEN",
+  "bot_id": "1094836000000008001",
+  "script_path": "scripts/bot_v3.0.dlz",
+  "enable_backup": true,
+  "enable_rollback": true,
+  "backup_dir": "backups",
+  "log_level": "INFO"
+}
