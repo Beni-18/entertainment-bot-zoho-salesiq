@@ -1,0 +1,62 @@
+# Configuration files with sensitive data
+config.json
+api/config.json
+.env
+.env.local
+
+# API keys and credentials
+*.key
+*.pem
+secrets/
+credentials/
+
+# Python related
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+PIPFILE.lock
+
+# Virtual environments
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Backups and temporary files
+backups/
+*.bak
+*.tmp
+*.log
+
+# Node modules (if any JavaScript files)
+node_modules/
+npm-debug.log
+
+# OS files
+Thumbs.db
+.AppleDouble
+.LSOverride
